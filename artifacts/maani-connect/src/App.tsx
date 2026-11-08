@@ -7,7 +7,7 @@ import {
   Clock3, Download, LockKeyhole,
   MapPin, Menu, QrCode, Search, ShieldCheck, Ticket, Users, X,
 } from 'lucide-react';
-import schoolLogo from '@assets/0_Logo_maker_project_-_08_November_2026_at_15.30.59_1794159672038.png';
+import schoolLogo from '@artifacts/maani-connect/public/maani-connect-logo.png';
 import {
   getGetEventQueryKey, getGetRegistrationBadgeQueryKey, getListAdminArchiveQueryKey,
   getExportEventRegistrationsQueryKey, getListAdminEventsQueryKey,
