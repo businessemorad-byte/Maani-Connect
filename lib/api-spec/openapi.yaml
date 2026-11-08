@@ -10,6 +10,16 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: events
+    description: Événements et inscriptions publiques
+  - name: activities
+    description: Activités du lycée
+  - name: registrations
+    description: Badges et inscriptions
+  - name: admin
+    description: Gestion réservée aux administrateurs
+  - name: Auth
+    description: Browser and mobile authentication endpoints.
 paths:
   /healthz:
     get:
@@ -24,7 +34,594 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /events:
+    get:
+      operationId: listEvents
+      tags: [events]
+      summary: Lister les événements à venir ouverts
+      responses:
+        "200":
+          description: Liste des événements publics
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Event"
+  /events/upcoming:
+    get:
+      operationId: getUpcomingEvent
+      tags: [events]
+      summary: Obtenir le prochain événement public
+      responses:
+        "200":
+          description: Événement à venir ou valeur nulle
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpcomingEvent"
+  /events/archive:
+    get:
+      operationId: listPublicArchive
+      tags: [events]
+      summary: Lister les événements passés sans données personnelles
+      responses:
+        "200":
+          description: Archive publique
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ArchiveEvent"
+  /events/{eventId}:
+    get:
+      operationId: getEvent
+      tags: [events]
+      summary: Obtenir les informations d'un événement
+      parameters:
+        - $ref: "#/components/parameters/EventId"
+      responses:
+        "200":
+          description: Événement
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Event"
+        "404":
+          description: Événement introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /events/{eventId}/registrations:
+    post:
+      operationId: registerForEvent
+      tags: [registrations]
+      summary: S'inscrire à un événement
+      parameters:
+        - $ref: "#/components/parameters/EventId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegistrationInput"
+      responses:
+        "201":
+          description: Inscription confirmée
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegistrationBadge"
+        "400":
+          description: Informations ou consentement invalides
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "404":
+          description: Événement introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "409":
+          description: Événement complet, fermé ou inscription déjà existante
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "429":
+          description: Trop de tentatives
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /registrations/{registrationNumber}:
+    get:
+      operationId: getRegistrationBadge
+      tags: [registrations]
+      summary: Retrouver un badge par son numéro
+      parameters:
+        - $ref: "#/components/parameters/RegistrationNumber"
+      responses:
+        "200":
+          description: Badge et statut
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegistrationBadge"
+        "404":
+          description: Badge introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "429":
+          description: Trop de tentatives
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+    delete:
+      operationId: cancelOwnRegistration
+      tags: [registrations]
+      summary: Annuler une inscription avec son numéro de badge
+      parameters:
+        - $ref: "#/components/parameters/RegistrationNumber"
+      responses:
+        "200":
+          description: Inscription annulée
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "404":
+          description: Badge introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "409":
+          description: Inscription déjà annulée
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /activities:
+    get:
+      operationId: listActivities
+      tags: [activities]
+      summary: Lister les activités proposées par le lycée
+      responses:
+        "200":
+          description: Activités
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Activity"
+  /admin/events:
+    get:
+      operationId: listAdminEvents
+      tags: [admin]
+      summary: Lister tous les événements pour l'administration
+      responses:
+        "200":
+          description: Événements et compteurs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminEvent"
+        "401":
+          description: Connexion administrateur requise
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "403":
+          description: Accès réservé aux administrateurs autorisés
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+    post:
+      operationId: createEvent
+      tags: [admin]
+      summary: Créer un événement
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EventInput"
+      responses:
+        "201":
+          description: Événement créé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminEvent"
+        "400":
+          description: Informations invalides
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "401":
+          description: Connexion administrateur requise
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "403":
+          description: Accès réservé aux administrateurs autorisés
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /admin/events/{eventId}:
+    patch:
+      operationId: updateEvent
+      tags: [admin]
+      summary: Modifier ou fermer un événement
+      parameters:
+        - $ref: "#/components/parameters/EventId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EventUpdate"
+      responses:
+        "200":
+          description: Événement mis à jour
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminEvent"
+        "400":
+          description: Informations invalides
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "401":
+          description: Connexion administrateur requise
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "403":
+          description: Accès réservé aux administrateurs autorisés
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "404":
+          description: Événement introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /admin/events/{eventId}/registrations:
+    get:
+      operationId: listEventRegistrations
+      tags: [admin]
+      summary: Voir et rechercher les inscrits d'un événement
+      parameters:
+        - $ref: "#/components/parameters/EventId"
+      responses:
+        "200":
+          description: Liste des inscrits
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RegistrationRow"
+        "401":
+          description: Connexion administrateur requise
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "403":
+          description: Accès réservé aux administrateurs autorisés
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /admin/registrations/{registrationNumber}/status:
+    patch:
+      operationId: updateRegistrationStatus
+      tags: [admin]
+      summary: Marquer présent ou annuler un badge
+      parameters:
+        - $ref: "#/components/parameters/RegistrationNumber"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegistrationStatusInput"
+      responses:
+        "200":
+          description: Statut mis à jour
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegistrationRow"
+        "401":
+          description: Connexion administrateur requise
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "403":
+          description: Accès réservé aux administrateurs autorisés
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "404":
+          description: Badge introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /admin/events/{eventId}/export.csv:
+    get:
+      operationId: exportEventRegistrations
+      tags: [admin]
+      summary: Exporter les inscrits d'un événement en CSV
+      parameters:
+        - $ref: "#/components/parameters/EventId"
+      responses:
+        "200":
+          description: Fichier CSV des inscrits
+          content:
+            text/csv:
+              schema:
+                type: string
+        "401":
+          description: Connexion administrateur requise
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "403":
+          description: Accès réservé aux administrateurs autorisés
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /admin/archive:
+    get:
+      operationId: listAdminArchive
+      tags: [admin]
+      summary: Consulter les événements archivés et leurs compteurs
+      responses:
+        "200":
+          description: Archive d'administration
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ArchiveSummary"
+        "401":
+          description: Connexion administrateur requise
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "403":
+          description: Accès réservé aux administrateurs autorisés
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /admin/settings:
+    get:
+      operationId: getAdminSettings
+      tags: [admin]
+      summary: Consulter les paramètres de conservation des données
+      responses:
+        "200":
+          description: Paramètres
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSettings"
+        "401":
+          description: Connexion administrateur requise
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "403":
+          description: Accès réservé aux administrateurs autorisés
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+    put:
+      operationId: updateAdminSettings
+      tags: [admin]
+      summary: Modifier la durée de conservation des données
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminSettingsInput"
+      responses:
+        "200":
+          description: Paramètres enregistrés
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSettings"
+        "401":
+          description: Connexion administrateur requise
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "403":
+          description: Accès réservé aux administrateurs autorisés
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /auth/user:
+    get:
+      tags: [Auth]
+      operationId: getCurrentAuthUser
+      summary: Get the currently authenticated user
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationSessionHeader"
+        - $ref: "#/components/parameters/SessionCookie"
+      responses:
+        "200":
+          description: Auth status resolved successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUserEnvelope"
+  /login:
+    get:
+      tags: [Auth]
+      operationId: beginBrowserLogin
+      summary: Start the browser OIDC login flow
+      parameters:
+        - name: returnTo
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "302":
+          description: Redirect to the OIDC authorization endpoint.
+  /callback:
+    get:
+      tags: [Auth]
+      operationId: handleBrowserLoginCallback
+      summary: Complete the browser OIDC login flow
+      parameters:
+        - name: code
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: state
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: iss
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uri
+      responses:
+        "302":
+          description: Redirect after successful login.
+  /logout:
+    get:
+      tags: [Auth]
+      operationId: logoutBrowserSession
+      summary: Clear the session and begin OIDC logout
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationSessionHeader"
+        - $ref: "#/components/parameters/SessionCookie"
+        - name: returnTo
+          in: query
+          required: false
+          schema:
+            type: string
+            default: /
+      responses:
+        "302":
+          description: Redirect to the OIDC provider logout URL.
+  /mobile-auth/token-exchange:
+    post:
+      tags: [Auth]
+      operationId: exchangeMobileAuthorizationCode
+      summary: Exchange a mobile OIDC code for a session token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MobileTokenExchangeRequest"
+      responses:
+        "200":
+          description: Session created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MobileTokenExchangeSuccess"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "401":
+          description: Token rejected
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /mobile-auth/logout:
+    post:
+      tags: [Auth]
+      operationId: logoutMobileSession
+      summary: Delete a mobile session token
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationSessionHeader"
+      responses:
+        "200":
+          description: Logout processed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LogoutSuccess"
 components:
+  parameters:
+    EventId:
+      name: eventId
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+    RegistrationNumber:
+      name: registrationNumber
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: "^MC-[0-9]{4,}$"
+    AuthorizationSessionHeader:
+      name: Authorization
+      in: header
+      required: false
+      schema:
+        type: string
+    SessionCookie:
+      name: sid
+      in: cookie
+      required: false
+      schema:
+        type: string
   schemas:
     HealthStatus:
       type: object
@@ -33,4 +630,179 @@ components:
           type: string
       required:
         - status
+    Event:
+      type: object
+      required: [id, title, description, date, time, place, maxCapacity, registeredCount, spotsLeft, isOpen]
+      properties:
+        id: { type: integer }
+        title: { type: string }
+        description: { type: string }
+        date: { type: string }
+        time: { type: string }
+        place: { type: string }
+        maxCapacity: { type: integer }
+        registeredCount: { type: integer }
+        spotsLeft: { type: integer }
+        isOpen: { type: boolean }
+    AdminEvent:
+      allOf:
+        - $ref: "#/components/schemas/Event"
+        - type: object
+          required: [presentCount, updatedAt]
+          properties:
+            presentCount: { type: integer }
+            updatedAt: { type: string, format: date-time }
+    UpcomingEvent:
+      type: object
+      required: [event]
+      properties:
+        event:
+          oneOf:
+            - $ref: "#/components/schemas/Event"
+            - type: "null"
+    ArchiveEvent:
+      type: object
+      required: [id, title, date]
+      properties:
+        id: { type: integer }
+        title: { type: string }
+        date: { type: string }
+    ArchiveSummary:
+      allOf:
+        - $ref: "#/components/schemas/ArchiveEvent"
+        - type: object
+          required: [registeredCount, presentCount]
+          properties:
+            registeredCount: { type: integer }
+            presentCount: { type: integer }
+    RegistrationInput:
+      type: object
+      required: [fullName, className, consent]
+      properties:
+        fullName:
+          type: string
+          minLength: 2
+          maxLength: 100
+        className:
+          type: string
+          minLength: 1
+          maxLength: 40
+        consent:
+          type: boolean
+          const: true
+    RegistrationBadge:
+      type: object
+      required: [registrationNumber, fullName, className, status, event]
+      properties:
+        registrationNumber: { type: string }
+        fullName: { type: string }
+        className: { type: string }
+        status:
+          type: string
+          enum: [registered, present, cancelled]
+        event:
+          $ref: "#/components/schemas/Event"
+    RegistrationRow:
+      type: object
+      required: [registrationNumber, fullName, className, status, createdAt]
+      properties:
+        registrationNumber: { type: string }
+        fullName: { type: string }
+        className: { type: string }
+        status:
+          type: string
+          enum: [registered, present, cancelled]
+        createdAt: { type: string, format: date-time }
+    RegistrationStatusInput:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [present, cancelled]
+    EventInput:
+      type: object
+      required: [title, description, date, time, place, maxCapacity]
+      properties:
+        title: { type: string, minLength: 2, maxLength: 120 }
+        description: { type: string, maxLength: 2000 }
+        date: { type: string }
+        time: { type: string, maxLength: 30 }
+        place: { type: string, minLength: 2, maxLength: 160 }
+        maxCapacity: { type: integer, minimum: 1, maximum: 5000 }
+    EventUpdate:
+      type: object
+      minProperties: 1
+      properties:
+        title: { type: string, minLength: 2, maxLength: 120 }
+        description: { type: string, maxLength: 2000 }
+        date: { type: string }
+        time: { type: string, maxLength: 30 }
+        place: { type: string, minLength: 2, maxLength: 160 }
+        maxCapacity: { type: integer, minimum: 1, maximum: 5000 }
+        isOpen: { type: boolean }
+    Activity:
+      type: object
+      required: [id, title, description, schedule]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        description: { type: string }
+        schedule: { type: string }
+    AdminSettings:
+      type: object
+      required: [retentionMonths]
+      properties:
+        retentionMonths: { type: integer }
+    AdminSettingsInput:
+      type: object
+      required: [retentionMonths]
+      properties:
+        retentionMonths: { type: integer, minimum: 1, maximum: 60 }
+    SuccessResponse:
+      type: object
+      required: [success]
+      properties:
+        success: { type: boolean, const: true }
+    AuthUser:
+      type: object
+      required: [id, email, firstName, lastName, profileImageUrl]
+      properties:
+        id: { type: string }
+        email: { type: [string, "null"], format: email }
+        firstName: { type: [string, "null"] }
+        lastName: { type: [string, "null"] }
+        profileImageUrl: { type: [string, "null"] }
+    AuthUserEnvelope:
+      type: object
+      required: [user]
+      properties:
+        user:
+          oneOf:
+            - $ref: "#/components/schemas/AuthUser"
+            - type: "null"
+    MobileTokenExchangeRequest:
+      type: object
+      required: [code, code_verifier, redirect_uri, state]
+      properties:
+        code: { type: string, minLength: 1 }
+        code_verifier: { type: string, minLength: 1 }
+        redirect_uri: { type: string, minLength: 1, format: uri }
+        state: { type: string, minLength: 1 }
+        nonce: { type: string, minLength: 1 }
+    MobileTokenExchangeSuccess:
+      type: object
+      required: [token]
+      properties:
+        token: { type: string }
+    LogoutSuccess:
+      type: object
+      required: [success]
+      properties:
+        success: { type: boolean, const: true }
+    ErrorEnvelope:
+      type: object
+      required: [error]
+      properties:
+        error: { type: string }
 

@@ -1,4 +1,5 @@
 import app from "./app";
+import { cleanExpiredRegistrationData } from "./lib/retention";
 import { logger } from "./lib/logger";
 
 const rawPort = process.env["PORT"];
@@ -23,3 +24,12 @@ app.listen(port, (err) => {
 
   logger.info({ port }, "Server listening");
 });
+
+const runRetentionCleanup = (): void => {
+  void cleanExpiredRegistrationData().catch((err: unknown) => {
+    logger.error({ err }, "Registration data retention cleanup failed");
+  });
+};
+runRetentionCleanup();
+const retentionTimer = setInterval(runRetentionCleanup, 6 * 60 * 60 * 1000);
+retentionTimer.unref();

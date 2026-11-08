@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Maani Connect"
+description = "Le site mobile-first du Lycée Mustapha El Maani pour découvrir les activités, s’inscrire aux événements et gérer les badges."
+version = "1.0.0"
+id = "artifacts/maani-connect"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 23513
+
+[services.development]
+run = "pnpm --filter @workspace/maani-connect run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/maani-connect", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/maani-connect/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "23513"
+BASE_PATH = "/"
